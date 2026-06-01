@@ -51,9 +51,9 @@ app.post("/upload", async (req, res) => {
         const bucketName = "github-projects-cloned";
         const s3FolderPrefix = path.join(id , projectName);
         //S3 uploading
-        //await uploadFolderToS3(outputFolderPath, bucketName , s3FolderPrefix);
+        await uploadFolderToS3(outputFolderPath, bucketName , s3FolderPrefix);
         //push to redis queue so deploy service fetch from there 
-        await redisClient.rPush("deploy-projects-queue" , id);
+        await redisClient.rPush("deploy-projects-queue" , s3FolderPrefix);
         await deleteFolder(path.dirname(outputFolderPath));
 
         console.log(`Added deployment ${id} to queue...`);
