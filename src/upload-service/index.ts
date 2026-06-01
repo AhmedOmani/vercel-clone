@@ -6,7 +6,7 @@ import mime from "mime-types";
 import {S3Client , PutObjectCommand} from "@aws-sdk/client-s3"
 import {simpleGit , CleanOptions ,type SimpleGit } from "simple-git"
 import { createClient } from "redis";
-import { fetchProjectName , generate } from "./utils.js";
+import { fetchProjectName , generate } from "../shared/utils.js";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -51,9 +51,11 @@ app.post("/upload", async (req, res) => {
         const bucketName = "github-projects-cloned";
         const s3FolderPrefix = path.join(id , projectName);
         //S3 uploading
-        await uploadFolderToS3(outputFolderPath, bucketName , s3FolderPrefix);
+        //await uploadFolderToS3(outputFolderPath, bucketName , s3FolderPrefix);
         //push to redis queue so deploy service fetch from there 
         await redisClient.rPush("deploy-projects-queue" , id);
+        await deleteFolder(path.dirname(outputFolderPath));
+
         console.log(`Added deployment ${id} to queue...`);
         return res.json({success: true});
     } catch (error) {
@@ -106,6 +108,12 @@ async function uploadFolderToS3(dirPath: string , bucketName: string , s3FolderP
     } catch (error) {
         console.error("Error occur while uploading to S3...\n", error);
     }
+}
+
+async function deleteFolder(dirPath: string) {
+    console.log(dirPath);
+    fs.rmSync(dirPath ,  {recursive: true});
+    console.log("Project has been deleted.");
 }
 
 app.listen(PORT, async () => {
