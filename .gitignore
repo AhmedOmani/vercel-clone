@@ -21,3 +21,4 @@ yarn-error.log*
 
 # Optional editor folders
 .vscode/
+downloaded/

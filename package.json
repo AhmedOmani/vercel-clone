@@ -6,7 +6,8 @@
   "scripts": {
     "build": "npx tsc -b",
     "start:upload" : "node dist/upload-service/index.js",
-    "start:deploy" : "node dist/deploy-service/index.js"
+    "start:deploy" : "node dist/deploy-service/index.js",
+    "start:reverse-proxy" : "node dist/request-handler-service/index.js"
   },
   "keywords": [],
   "author": "",

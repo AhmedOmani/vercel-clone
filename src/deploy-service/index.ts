@@ -6,6 +6,9 @@ import dotenv from "dotenv";
 import fs from "fs";
 import { Readable } from "stream";
 import { spawn } from "child_process";
+
+import { uploadFolderToS3 } from "../shared/utils.js";
+
 dotenv.config();
 
 const redisClient = createClient();
@@ -73,13 +76,15 @@ const buildProject = async (command: string , args: string[] , projectPath: stri
         });
     })
 }
+//npm run start:deploy
 
 const deploy = async (s3Client: S3Client, bucketName: string, targetDir: string) => {
     while(true) {
         
-        const job = await redisClient.brPop("deploy-projects-queue" , 0);
+        const job = await redisClient.blPop("deploy-projects-queue" , 0);
         const s3Prefix = job?.element ?? "";
         const fullPath = path.join(targetDir , s3Prefix);
+        console.log("full path: " , fullPath);
 
         try {    
             console.log("Starting downloading the project from object storage...");
@@ -92,6 +97,7 @@ const deploy = async (s3Client: S3Client, bucketName: string, targetDir: string)
             await buildProject("npm" , ["run" , "build"] , fullPath);
 
             console.log(`Deployment ${s3Prefix} built successfully , Ready for distribution`);
+            await uploadFolderToS3(`${fullPath}/dist`, bucketName , `deploy/${s3Prefix}`);
 
         } catch(error) {
             console.error(`Deployment ${s3Prefix} failed at build stage: \n`, error);

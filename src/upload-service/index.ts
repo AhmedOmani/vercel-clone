@@ -2,14 +2,15 @@ import express from "express";
 import cors from "cors";
 import path from "path"
 import fs from "fs";
-import mime from "mime-types"; 
+
 import {S3Client , PutObjectCommand} from "@aws-sdk/client-s3"
 import {simpleGit , CleanOptions ,type SimpleGit } from "simple-git"
 import { createClient } from "redis";
 import { fetchProjectName , generate } from "../shared/utils.js";
-
 import dotenv from "dotenv";
 dotenv.config();
+
+import { uploadFolderToS3 } from "../shared/utils.js";
 
 const git : SimpleGit = simpleGit().clean(CleanOptions.FORCE);
 
@@ -57,58 +58,13 @@ app.post("/upload", async (req, res) => {
         await deleteFolder(path.dirname(outputFolderPath));
 
         console.log(`Added deployment ${id} to queue...`);
-        return res.json({success: true});
+        return res.json({success: true , id: id});
     } catch (error) {
         console.log(error);
         return res.json({success: false , error : error});
     }
 });
 
-function getAllFiles(dirPath: string , filesList: string[]) {
-    const files = fs.readdirSync(dirPath);
-
-    files.forEach((file) => {
-        const filePath = path.join(dirPath, file);
-        if (fs.statSync(filePath).isDirectory()) {
-            if (file !== ".git" && file !== "node_modules")
-                filesList = getAllFiles(filePath , filesList);
-        } else {
-            filesList.push(filePath)
-        }
-    })
-
-    return filesList;
-}
-
-async function uploadFolderToS3(dirPath: string , bucketName: string , s3FolderPrefix: string) {
-    try {
-        const files = getAllFiles(dirPath , []);
-        console.log(`Project files ${files.length} will be uploaded...`);
-
-        for (const filePath of files) {
-            const relativePath = path.relative(dirPath , filePath);
-            const s3Key = path.join(s3FolderPrefix , relativePath).replace(/\\/g, "/");
-            
-            const fileBuffer = fs.readFileSync(filePath);
-            console.log("Buffer: ");
-            console.log(fileBuffer);
-            const contentType = mime.lookup(filePath) || "application/octet-stream";
-
-            const uploadParams = {
-                Bucket: bucketName,
-                Key: s3Key,
-                Body: fileBuffer,
-            }
-
-            await s3Client.send(new PutObjectCommand(uploadParams));
-            console.log(`Successfully uploaded: ${s3Key}`);
-        }
-
-        console.log(`Successfully uploaded all project files.`);
-    } catch (error) {
-        console.error("Error occur while uploading to S3...\n", error);
-    }
-}
 
 async function deleteFolder(dirPath: string) {
     console.log(dirPath);
