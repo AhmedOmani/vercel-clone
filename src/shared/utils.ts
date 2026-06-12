@@ -1,4 +1,5 @@
-import {S3Client , PutObjectCommand} from "@aws-sdk/client-s3";
+import { s3Client } from "../shared/aws.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import mime from "mime-types"; 
 import path from "path";
@@ -23,20 +24,6 @@ export const fetchProjectName = (url: string) => {
     return name;
 }
 
-const accessKeyId = process.env.accessKeyId;
-const secretAccessKey = process.env.secretAccessKey;
-
-if (!accessKeyId || !secretAccessKey) {
-    throw new Error("Missing AWS configuration credentials.");
-}
-
-const s3Client = new S3Client({
-    region: "eu-north-1",
-    credentials: {
-        accessKeyId: accessKeyId,
-        secretAccessKey: secretAccessKey
-    }
-});
 
 function getAllFiles(dirPath: string , filesList: string[]) {
     const files = fs.readdirSync(dirPath);
